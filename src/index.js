@@ -11,7 +11,13 @@ const {
   getPlayer,
   removePlayer,
 } = require("./utils/players.js");
-const { log } = require('npm');
+
+const {
+    getGameStatus,
+  setGameStatus,
+  setGame,
+} = require('./utils/game.js')
+
 
 
 const app = express();
@@ -87,19 +93,17 @@ io.on('connection', (socket) => { // listen for new connections to Socket.IO
          }
       });
 
-      socket.on("getQuestion", (data, callback) => {
+      socket.on("getQuestion", async (data, callback) => {
          const { error, player } = getPlayer(socket.id);
 
          if (error) return callback(error.message);
 
          if (player) {
             // Pass in a callback function to handle the promise that's returned from the API call
-            setGame((game) => {
-               // Emit the "question" event to all players in the room
-               io.to(player.room).emit("question", {
-                  playerName: player.playerName,
-                  ...game.prompt,
-               });
+            const game = await setGame();
+            io.to(player.room).emit('question', {
+               playerName: player.playerName,
+               ...game.prompt,
             });
          }
       });
