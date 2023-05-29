@@ -107,6 +107,46 @@ io.on('connection', (socket) => { // listen for new connections to Socket.IO
             });
          }
       });
+
+      socket.on("sendAnswer", (answer, callback) => {
+         const { error, player } = getPlayer(socket.id);
+
+         if (error) return callback(error.message);
+
+         if (player) {
+            const { isRoundOver } = setGameStatus({
+               event: "sendAnswer",
+               playerId: player.id,
+               room: player.room,
+            });
+
+            // Since we want to show the player's submission to the rest of the players,
+            // we have to emit an event (`answer`) to all the players in the room along
+            // with the player's answer and `isRoundOver`.
+            io.to(player.room).emit("answer", {
+               ...formatMessage(player.playerName, answer),
+               isRoundOver,
+            });
+
+            callback();
+         }
+      });
+
+      socket.on("getAnswer", (data, callback) => {
+         const { error, player } = getPlayer(socket.id);
+
+         if (error) return callback(error.message);
+
+         if (player) {
+            const { correctAnswer } = getGameStatus({
+               event: "getAnswer",
+            });
+            io.to(player.room).emit(
+               "correctAnswer",
+               formatMessage(player.playerName, correctAnswer)
+            );
+         }
+      });
    })
       
       
